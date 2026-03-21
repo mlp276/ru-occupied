@@ -8,14 +8,18 @@ export async function POST({ request }) {
     console.log("Sensor ID: " + sensor_id);
     console.log("Timestamp: " + timestamp);
     console.log("Occupied: " + occupied);
+    if (sensor_id == null || timestamp == null || occupied == null) {
+        console.log("Missing sensor_id, timestamp, or occupied");
+        return json({ status: 400 });
+    }
 
     // Create database client
     const client = new MongoClient(MONGO_URL, {
     serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
-        deprecationErrors: true,
-    }
+        deprecationErrors: true
+        }
     });
 
     // Add data to database
@@ -41,7 +45,7 @@ export async function POST({ request }) {
     }
     catch (error) {
         console.error("Error connecting to MongoDB: ", error);
-        return ({ status: 500 });
+        return json({ status: 500 });
     }
     finally {
         await client.close();
