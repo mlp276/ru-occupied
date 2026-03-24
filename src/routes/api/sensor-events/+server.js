@@ -4,12 +4,11 @@ import { MONGO_URL } from "$env/static/private";
 
 export async function POST({ request }) {
     // Get POST data
-    const { sensor_id, timestamp, occupied } = await request.json();
+    const { sensor_id, occupied } = await request.json();
     console.log("Sensor ID: " + sensor_id);
-    console.log("Timestamp: " + timestamp);
     console.log("Occupied: " + occupied);
-    if (sensor_id == null || timestamp == null || occupied == null) {
-        console.log("Missing sensor_id, timestamp, or occupied");
+    if (sensor_id == null || occupied == null) {
+        console.log("Missing sensor_id or occupied");
         return json({ status: 400 });
     }
 
@@ -30,7 +29,7 @@ export async function POST({ request }) {
         // Add sensor event to collection "sensor_events"
         await db.collection("sensor_events").insertOne({
             sensor_id: sensor_id,
-            timestamp: new Date(timestamp),
+            timestamp: new Date(),
             occupied: occupied
         });
 
