@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RU Occupied</title>
+    <style>
+        :root {
+            --rutgers-red: #cc0033;
+            --rutgers-red-dark: #a80000;
+            --color-bg-primary: #f5f5f5;
+            --color-surface: #ffffff;
+            --color-text-primary: #1f2121;
+            --color-text-secondary: #626c71;
+            --color-border: rgba(94, 82, 64, 0.2);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-bg-primary: #1f2121;
+                --color-surface: #262828;
+                --color-text-primary: #f5f5f5;
+                --color-text-secondary: #a7a9a9;
+                --color-border: rgba(119, 124, 124, 0.3);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: var(--rutgers-red);
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .back-btn {
+            background: var(--rutgers-red);
+            color: white;
+            border: none;
+            padding: 0.875rem 1.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            margin-bottom: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+            font-weight: 500;
+            min-height: 48px;
+            min-width: 120px;
+            touch-action: manipulation;
+        }
+
+        .back-btn:focus-visible {
+            outline: 3px solid rgba(204, 0, 51, 0.5);
+            outline-offset: 3px;
+        }
+
+        .back-btn:hover {
+            background: var(--rutgers-red-dark);
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .card {
+            background: var(--color-surface);
+            border-radius: 12px;
+            padding: 2rem 1.5rem;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: center;
+            border: 1px solid var(--color-border);
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            touch-action: manipulation;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card:active {
+            transform: translateY(-2px);
+            background: rgba(204, 0, 51, 0.05);
+        }
+
+        .card:focus-visible {
+            outline: 3px solid var(--rutgers-red);
+            outline-offset: 2px;
+        }
+
+        .card h2 {
+            color: var(--rutgers-red);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .card p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 0.75rem;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(204, 0, 51, 0.1);
+            border-radius: 12px;
+        }
+
+        .room-status {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-free {
+            background: #e8f5e9;
+            color: #1b5e20;
+        }
+
+        .status-mixed {
+            background: #fff9c4;
+            color: #f57f17;
+        }
+
+        .status-busy {
+            background: #ffebee;
+            color: #b71c1c;
+        }
+
+        .status-neutral {
+            background: #eceff1;
+            color: #455a64;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .calendar-controls {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .view-toggle {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text-primary);
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .legend {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid var(--color-border);
+        }
+
+        .calendar {
+            background: var(--color-surface);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            overflow-x: auto;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            gap: 0.5rem;
+            min-width: 600px;
+        }
+
+        .calendar-grid.daily {
+            grid-template-columns: 80px 1fr;
+        }
+
+        .cal-header {
+            background: rgba(204, 0, 51, 0.1);
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            font-weight: 600;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: var(--rutgers-red);
+        }
+
+        .time-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .hour-cell {
+            min-height: 56px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            border: 1px solid var(--color-border);
+            transition: transform 0.1s;
+            font-weight: 500;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .hour-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .hour-cell:focus-visible {
+            outline: 2px solid var(--rutgers-red);
+            outline-offset: 2px;
+        }
+
+        .past-empty {
+            background: white;
+            color: #999;
+        }
+
+        .past-occupied {
+            background: #2c2c2c;
+            color: white;
+        }
+
+        .prob-0 {
+            background: #ffffff;
+            color: #666;
+        }
+
+        .prob-25 {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .prob-50 {
+            background: #90caf9;
+            color: #0d47a1;
+        }
+
+        .prob-75 {
+            background: #42a5f5;
+            color: white;
+        }
+
+        .prob-100 {
+            background: #1565c0;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+                padding-bottom: 2rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .card {
+                min-height: 100px;
+            }
+
+            .back-btn {
+                position: sticky;
+                top: 1rem;
+                z-index: 10;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .calendar-grid {
+                grid-template-columns: 60px repeat(7, 1fr);
+            }
+
+            .calendar-grid.daily {
+                grid-template-columns: 60px 1fr;
+            }
+
+            .cal-header {
+                font-size: 0.85rem;
+                padding: 0.625rem 0.25rem;
+            }
+
+            .hour-cell {
+                font-size: 0.85rem;
+                min-height: 52px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .legend {
+                font-size: 0.8rem;
+            }
+
+            .legend-box {
+                width: 18px;
+                height: 18px;
+            }
+
+            .back-btn {
+                font-size: 1rem;
+                padding: 0.875rem 1.5rem;
+            }
+        }
+
+        .loading-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(204, 0, 51, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--rutgers-red);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-message {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--color-surface);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--color-border);
+            z-index: 1000;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Home Page -->
+    <div id="home" class="page active">
+        <div class="container">
+            <header>
+                <h1>RU Occupied</h1>
+                <p class="subtitle">Check classroom availability across Rutgers campuses</p>
+            </header>
+            <div class="cards" id="campus-cards">
+                <div class="card" onclick="showCampus('busch')" tabindex="0" role="button" aria-label="View Busch Campus buildings">
+                    <h2>Busch</h2>
+                    <p>Engineering & Science buildings</p>
+                </div>
+                <div class="card" onclick="showCampus('livingston')" tabindex="0" role="button" aria-label="View Livingston Campus buildings">
+                    <h2>Livingston</h2>
+                    <p>Academic buildings</p>
+                </div>
+                <div class="card" onclick="showCampus('college-ave')" tabindex="0" role="button" aria-label="View College Avenue Campus buildings">
+                    <h2>College Ave</h2>
+                    <p>Historic campus buildings</p>
+                </div>
+                <div class="card" onclick="showCampus('cook-doug')" tabindex="0" role="button" aria-label="View Cook/Douglass Campus buildings">
+                    <h2>Cook/Douglass</h2>
+                    <p>Science & Agriculture buildings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buildings Page -->
+    <div id="buildings-page" class="page">
+        <div class="container">
+            <button class="back-btn" onclick="navigateBack()">
+                ← Back
+            </button>
+            <header>
+                <h1 id="campus-title">Campus Buildings</h1>
+            </header>
+            <div class="cards" id="buildings-cards"></div>
+        </div>
+    </div>
+
+    <!-- Rooms Page -->
+    <div id="rooms-page" class="page">
+        <div class="container">
+            <button class="back-btn" onclick="navigateBack()">
+                ← Back
+            </button>
+            <header>
+                <h1 id="building-title">Building Rooms</h1>
+            </header>
+            <div class="cards" id="rooms-cards"></div>
+        </div>
+    </div>
+
+    <!-- Calendar Page -->
+    <div id="calendar-page" class="page">
+        <div class="container">
+            <button class="back-btn" onclick="navigateBack()">
+                ← Back
+            </button>
+            <header>
+                <h1 id="room-title">Room Occupancy</h1>
+            </header>
+            
+            <div class="calendar-controls">
+                <select class="view-toggle" id="view-toggle" onchange="updateCalendar()">
+                    <option value="daily">Daily View</option>
+                    <option value="weekly">Weekly View</option>
+                </select>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: white;"></div>
+                        <span>0% likely</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #90caf9;"></div>
+                        <span>50% likely</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #1565c0;"></div>
+                        <span>100% likely</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #2c2c2c;"></div>
+                        <span>Past: Occupied</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="calendar">
+                <div class="calendar-grid" id="calendar-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-message" id="status-message" role="status" aria-live="polite"></div>
+
+    <script>
+        const navigationStack = [];
+        let currentCampus = '';
+        let currentBuilding = '';
+        let currentRoom = '';
+
+        const campusData = {
+            'busch': {
+                name: 'Busch Campus',
+                buildings: {
+                    'rwh': { name: 'Richard Weeks Hall', rooms: ['101', '102', '103', '201', 'Lab A', 'Auditorium'] },
+                    'bsc': { name: 'Busch Student Center', rooms: ['100', '200', '201', '202'] },
+                    'sec': { name: 'Science & Engineering Center', rooms: ['201', '202', '301', 'Lab 1'] },
+                    'arc': { name: 'ARC Building', rooms: ['301', '302', 'Conference A'] }
+                }
+            },
+            'livingston': {
+                name: 'Livingston Campus',
+                buildings: {
+                    'lsc': { name: 'Livingston Student Center', rooms: ['100', '200', '300'] },
+                    'tlc': { name: 'Tillett Hall', rooms: ['101', '102', '201'] },
+                    'bcc': { name: 'Beck Hall', rooms: ['100', '101', '102'] }
+                }
+            },
+            'college-ave': {
+                name: 'College Avenue Campus',
+                buildings: {
+                    'murray': { name: 'Murray Hall', rooms: ['101', '102', '201', '202'] },
+                    'bishop': { name: 'Bishop House', rooms: ['100', '101'] },
+                    'sc': { name: 'Student Center', rooms: ['200', '201', '202'] }
+                }
+            },
+            'cook-doug': {
+                name: 'Cook/Douglass Campus',
+                buildings: {
+                    'lipman': { name: 'Lipman Hall', rooms: ['101', '102', '201'] },
+                    'foran': { name: 'Foran Hall', rooms: ['100', '200', '201'] },
+                    'blake': { name: 'Blake Hall', rooms: ['100', '101', '102'] }
+                }
+            }
+        };
+
+        function generateMockOccupancy() {
+            const occupancy = {};
+            const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            
+            days.forEach(day => {
+                occupancy[day] = {};
+                hours.forEach(hour => {
+                    occupancy[day][hour] = Math.random();
+                });
+            });
+            
+            return occupancy;
+        }
+
+        function showCampus(campusId) {
+            currentCampus = campusId;
+            const campus = campusData[campusId];
+            
+            document.getElementById('campus-title').textContent = campus.name;
+            
+            const buildingsCards = document.getElementById('buildings-cards');
+            buildingsCards.innerHTML = '';
+            
+            Object.keys(campus.buildings).forEach(buildingId => {
+                const building = campus.buildings[buildingId];
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => showBuilding(buildingId);
+                card.tabIndex = 0;
+                card.role = 'button';
+                card.setAttribute('aria-label', `View ${building.name}, ${building.rooms.length} rooms`);
+                card.onkeypress = (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        showBuilding(buildingId);
+                    }
+                };
+                card.innerHTML = `<div class="card-icon">🏢</div><h2>${building.name}</h2><p>${building.rooms.length} rooms</p>`;
+                buildingsCards.appendChild(card);
+            });
+            
+            navigationStack.push('home');
+            showPage('buildings-page');
+        }
+
+        function showBuilding(buildingId) {
+            currentBuilding = buildingId;
+            const building = campusData[currentCampus].buildings[buildingId];
+            
+            document.getElementById('building-title').textContent = building.name;
+            
+            const roomsCards = document.getElementById('rooms-cards');
+            roomsCards.innerHTML = '';
+            
+            building.rooms.forEach(room => {
+                const currentProb = Math.random();
+                let statusLabel = 'Unknown';
+                let statusClass = 'status-neutral';
+
+                if (currentProb < 0.3) {
+                    statusLabel = 'Likely Free';
+                    statusClass = 'status-free';
+                } else if (currentProb < 0.7) {
+                    statusLabel = 'Maybe Busy';
+                    statusClass = 'status-mixed';
+                } else {
+                    statusLabel = 'Likely Occupied';
+                    statusClass = 'status-busy';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => showRoom(room);
+                card.tabIndex = 0;
+                card.role = 'button';
+                card.setAttribute('aria-label', `View occupancy for Room ${room}, status: ${statusLabel}`);
+                card.onkeypress = (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        showRoom(room);
+                    }
+                };
+                card.innerHTML = `
+                    <div class="card-icon">🚪</div>
+                    <h2>Room ${room}</h2>
+                    <p class="room-status ${statusClass}">${statusLabel}</p>
+                `;
+                roomsCards.appendChild(card);
+            });
+            
+            navigationStack.push('buildings-page');
+            showPage('rooms-page');
+        }
+
+        function showRoom(room) {
+            currentRoom = room;
+            document.getElementById('room-title').textContent = `${campusData[currentCampus].buildings[currentBuilding].name} - Room ${room}`;
+            
+            navigationStack.push('rooms-page');
+            showPage('calendar-page');
+            updateCalendar();
+        }
+
+        function updateCalendar() {
+            const viewType = document.getElementById('view-toggle').value;
+            const grid = document.getElementById('calendar-grid');
+            grid.className = `calendar-grid ${viewType}`;
+            grid.innerHTML = '';
+            
+            const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+            const currentHour = new Date().getHours();
+            const currentDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
+            
+            const occupancy = generateMockOccupancy();
+            
+            if (viewType === 'daily') {
+                grid.innerHTML += '<div class="cal-header">Time</div>';
+                grid.innerHTML += `<div class="cal-header">Today</div>`;
+                
+                hours.forEach(hour => {
+                    const timeLabel = document.createElement('div');
+                    timeLabel.className = 'time-label';
+                    timeLabel.textContent = hour <= 12 ? `${hour}AM` : `${hour - 12}PM`;
+                    grid.appendChild(timeLabel);
+                    
+                    const cell = document.createElement('div');
+                    cell.className = 'hour-cell';
+                    
+                    const prob = occupancy[currentDay][hour];
+                    
+                    if (hour < currentHour) {
+                        cell.classList.add(prob > 0.5 ? 'past-occupied' : 'past-empty');
+                        cell.textContent = prob > 0.5 ? 'Occupied' : 'Empty';
+                    } else {
+                        const probClass = `prob-${Math.floor(prob * 4) * 25}`;
+                        cell.classList.add(probClass);
+                        cell.textContent = `${Math.round(prob * 100)}%`;
+                    }
+                    
+                    grid.appendChild(cell);
+                });
+            } else {
+                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                
+                grid.innerHTML += '<div class="cal-header">Time</div>';
+                days.forEach(day => {
+                    grid.innerHTML += `<div class="cal-header">${day}</div>`;
+                });
+                
+                hours.forEach(hour => {
+                    const timeLabel = document.createElement('div');
+                    timeLabel.className = 'time-label';
+                    timeLabel.textContent = hour <= 12 ? `${hour}AM` : `${hour - 12}PM`;
+                    grid.appendChild(timeLabel);
+                    
+                    days.forEach(day => {
+                        const cell = document.createElement('div');
+                        cell.className = 'hour-cell';
+                        
+                        const prob = occupancy[day][hour];
+                        const isPast = (day === currentDay && hour < currentHour);
+                        
+                        if (isPast) {
+                            cell.classList.add(prob > 0.5 ? 'past-occupied' : 'past-empty');
+                            cell.textContent = prob > 0.5 ? '✓' : '✗';
+                        } else {
+                            const probClass = `prob-${Math.floor(prob * 4) * 25}`;
+                            cell.classList.add(probClass);
+                            cell.textContent = `${Math.round(prob * 100)}%`;
+                        }
+                        
+                        grid.appendChild(cell);
+                    });
+                });
+            }
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function navigateBack() {
+            const previousPage = navigationStack.pop();
+            if (previousPage) {
+                showPage(previousPage);
+                showStatusMessage('Navigated back');
+            }
+        }
+
+        function showStatusMessage(message) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.classList.add('show');
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 2000);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && navigationStack.length > 0) {
+                navigateBack();
+            }
+        });
+
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    card.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
