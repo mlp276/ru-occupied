@@ -2,6 +2,22 @@ import { json } from "@sveltejs/kit";
 import { MongoClient, ServerApiVersion } from "mongodb";
 import { MONGO_URL } from "$env/static/private";
 
+// ─── CORS Configuration ──────────────────────────────────────────────────────
+// '*' allows any origin to call this API (suitable for a public-facing tool).
+// If you need to restrict access, replace '*' with a specific origin, e.g.:
+// 'https://your-frontend-domain.com'
+const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Handle preflight requests sent by the browser before GET/POST
+export async function OPTIONS() {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function GET({ url }) {
     // Get GET request parameters
     const room_names = url.searchParams.getAll("room_name");
@@ -29,10 +45,10 @@ export async function GET({ url }) {
         const data = await db.collection("sensors").find(query).toArray();
 
         console.log("Successfully retrieved from MongoDB");
-        return json(data);
+        return json(data, { headers: CORS_HEADERS });
     } catch (error) {
         console.error("Error connecting to MongoDB: ", error);
-        return json({ status: 500 });
+        return json({ status: 500 }, { headers: CORS_HEADERS });
     }
     finally {
         await client.close();
@@ -47,7 +63,7 @@ export async function POST({ request }) {
     console.log("room_name: " + room_name);
     if (sensor_id == null) {
         console.log("Missing sensor_id");
-        return json({ status: 400 });
+        return json({ status: 400 }, { headers: CORS_HEADERS });
     }
     
     // Create database client
@@ -73,7 +89,7 @@ export async function POST({ request }) {
             // If adding a new sensor, all pertinent fields are required
             if (campus == null || room_name == null) {
                 console.log("Missing campus or room_name");
-                return json({ status: 400 });
+                return json({ status: 400 }, { headers: CORS_HEADERS });
             }
             
             await db.collection("sensors").insertOne({
@@ -99,10 +115,11 @@ export async function POST({ request }) {
         console.log("Successfully inserted to MongoDB");
     } catch (error) {
         console.error("Error connecting to MongoDB: ", error);
-        return json({ status: 500 });
+        return json({ status: 500 }, { headers: CORS_HEADERS });
     }
     finally {
         await client.close();
     }
-    return json({ status: 201 });
+    
+    return json({ status: 201 }, { headers: CORS_HEADERS });
 }
