@@ -121,9 +121,10 @@
             const sensors = await res.json();
 
             const built = {};
-            sensors.forEach(({ campus, room_name }) => {
-                if (!campus || !room_name) return;
+            sensors.forEach(({ campus, building, room_name }) => {
+                if (!campus || !building || !room_name) return;
 
+                // Ensure the campus entry exists
                 if (!built[campus]) {
                     built[campus] = {
                         name: CAMPUS_NAMES[campus] || campus,
@@ -131,16 +132,21 @@
                     };
                 }
 
-                // Placeholder building until schema has a building field
-                if (!built[campus].buildings[campus]) {
-                    built[campus].buildings[campus] = {
-                        name: CAMPUS_NAMES[campus] || campus,
+                // Ensure the building entry exists under this campus.
+                // building is used as both the key and the display name;
+                // if you later add a separate display name field to the schema,
+                // replace the second `building` below with that field.
+                if (!built[campus].buildings[building]) {
+                    built[campus].buildings[building] = {
+                        name: building,
                         rooms: []
                     };
                 }
 
-                const rooms = built[campus].buildings[campus].rooms;
+                // Add the room to its building if not already present
+                const rooms = built[campus].buildings[building].rooms;
                 if (!rooms.includes(room_name)) rooms.push(room_name);
+            });
             });
 
             campusData = built;
