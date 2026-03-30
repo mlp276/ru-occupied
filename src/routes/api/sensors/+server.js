@@ -87,14 +87,15 @@ export async function POST({ request }) {
         if (new_sensor) {
             // Operation 1: add new sensor to database
             // If adding a new sensor, all pertinent fields are required
-            if (campus == null || room == null) {
-                console.log("Missing campus or room");
+            if (campus == null || building == null || room == null) {
+                console.log("Missing campus, building, or room");
                 return new Response(null, { status: 400, headers: CORS_HEADERS });
             }
             
             await db.collection("sensors").insertOne({
                 _id: sensor_id,
                 campus: campus,
+                building: building,
                 room: room
             });
         }
