@@ -3,7 +3,7 @@
 
     // ─── API Configuration ────────────────────────────────────────────────────
     // Change this one constant to point to a different backend deployment.
-    const API_BASE_URL = 'https://ru-occupied-git-frontend-mlp276s-projects.vercel.app';
+    const BASE_URL = 'https://ru-occupied-git-frontend-mlp276s-projects.vercel.app';
     // ─────────────────────────────────────────────────────────────────────────
 
     const CAMPUS_NAMES = {
@@ -116,7 +116,7 @@
     // ─── API fetch on mount ──────────────────────────────────────────────────
     onMount(async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/sensors`);
+            const res = await fetch(`${BASE_URL}/api/sensors`);
             if (!res.ok) throw new Error(`Server returned ${res.status}`);
             const sensors = await res.json();
 
@@ -236,7 +236,7 @@
                         on:keypress={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToRoom(room); }}}
                     >
                         <div class="card-icon">🚪</div>
-                        <h2>Room {room}</h2>
+                        <h2>{room}</h2>
                         <p class="room-status {status.cls}">{status.label}</p>
                     </div>
                 {/each}

@@ -18,10 +18,10 @@ export async function OPTIONS() {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
+// Retrieve sensor metadata from the database
 export async function GET({ url }) {
-    // Get GET request parameters
-    const room_names = url.searchParams.getAll("room_name");
-    console.log("Room Names: " + room_names);
+    const rooms = url.searchParams.getAll("room");
+    console.log("Rooms: " + rooms);
 
     // Create database client
     const client = new MongoClient(MONGO_URL, {
@@ -40,39 +40,40 @@ export async function GET({ url }) {
         // Retrieve data for specified room names
         // If no room names specified, then retrieve data for all rooms
         const query = {};
-        if (room_names.length > 0)
-            query.room_name = { $in: room_names };
+        if (rooms.length > 0) query.room_name = { $in: rooms };
         const data = await db.collection("sensors").find(query).toArray();
 
         console.log("Successfully retrieved from MongoDB");
         return json(data, { headers: CORS_HEADERS });
     } catch (error) {
         console.error("Error connecting to MongoDB: ", error);
-        return json({ status: 500 }, { headers: CORS_HEADERS });
+        return new Response(null, { status: 500, headers: CORS_HEADERS });
     }
     finally {
         await client.close();
     }
 }
 
+// Add/update sensor metadata to the database
 export async function POST({ request }) {
     // Get POST data
-    const { sensor_id, campus, room_name } = await request.json();
+    const { sensor_id, campus, building, room } = await request.json();
     console.log("Sensor ID: " + sensor_id);
     console.log("Campus: " + campus);
-    console.log("room_name: " + room_name);
+    console.log("Building: " + building);
+    console.log("Room: " + room);
     if (sensor_id == null) {
-        console.log("Missing sensor_id");
-        return json({ status: 400 }, { headers: CORS_HEADERS });
+        console.log("Missing sensor id");
+        return new Response(null, { status: 400, headers: CORS_HEADERS });
     }
     
     // Create database client
     const client = new MongoClient(MONGO_URL, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true
-        }
+        serverApi: {
+            version: ServerApiVersion.v1,
+            strict: true,
+            deprecationErrors: true
+            }
     });
 
     // Add data to database
@@ -80,31 +81,29 @@ export async function POST({ request }) {
         await client.connect();
         const db = client.db("ru_occupied");
 
-        // Two possible operations: add new sensor or update existing sensor
         // Check if sensor already exists
         const new_sensor = await db.collection("sensors").findOne({ _id: sensor_id }) == null;
 
-        // Operation 1: add new sensor to database
         if (new_sensor) {
+            // Operation 1: add new sensor to database
             // If adding a new sensor, all pertinent fields are required
-            if (campus == null || room_name == null) {
-                console.log("Missing campus or room_name");
-                return json({ status: 400 }, { headers: CORS_HEADERS });
+            if (campus == null || room == null) {
+                console.log("Missing campus or room");
+                return new Response(null, { status: 400, headers: CORS_HEADERS });
             }
             
             await db.collection("sensors").insertOne({
                 _id: sensor_id,
                 campus: campus,
-                room_name: room_name
+                room: room
             });
         }
-        // Operation 2: update existing sensor's information
         else {
+            // Operation 2: update existing sensor's information
             const fields = {};
-            if (campus != null)
-                fields.campus = campus;
-            if (room_name != null)
-                fields.room_name = room_name;
+            if (campus != null) fields.campus = campus;
+            if (building != null) fields.building = building;
+            if (room != null) fields.room = room;
         
             await db.collection("sensors").updateOne(
                 { _id: sensor_id },
@@ -115,11 +114,11 @@ export async function POST({ request }) {
         console.log("Successfully inserted to MongoDB");
     } catch (error) {
         console.error("Error connecting to MongoDB: ", error);
-        return json({ status: 500 }, { headers: CORS_HEADERS });
+        return new Response(null, { status: 500, headers: CORS_HEADERS });
     }
     finally {
         await client.close();
     }
     
-    return json({ status: 201 }, { headers: CORS_HEADERS });
+    return new Response(null, { status: 201, headers: CORS_HEADERS });
 }
