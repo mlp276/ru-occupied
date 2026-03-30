@@ -530,7 +530,7 @@
 
         // ─── API Configuration ───────────────────────────────────────────────
         // Change this one constant to point to a different backend deployment.
-        const API_BASE_URL = 'https://ru-occupied.vercel.app';
+        const BASE_URL = 'https://ru-occupied-bl26cnauj-mlp276s-projects.vercel.app';
         // ────────────────────────────────────────────────────────────────────
 
         // Campus display name mapping
@@ -541,7 +541,7 @@
             'cook-doug': 'Cook/Douglass Campus'
         };
 
-        // Populated from API_BASE_URL on page load
+        // Populated from BASE_URL on page load
         let campusData = {};
 
         async function loadCampusData() {
@@ -549,7 +549,7 @@
             campusCards.innerHTML = '<div class="loading-indicator"></div>';
 
             try {
-                const res = await fetch(`${API_BASE_URL}/api/sensors`);
+                const res = await fetch(`${BASE_URL}/api/sensors`);
                 if (!res.ok) throw new Error(`Server returned ${res.status}`);
                 const sensors = await res.json();
                 console.log(sensors);
