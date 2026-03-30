@@ -3,7 +3,7 @@
 
     // ─── API Configuration ────────────────────────────────────────────────────
     // Change this one constant to point to a different backend deployment.
-    const API_BASE_URL = 'https://ru-occupied.vercel.app';
+    const API_BASE_URL = 'https://ru-occupied-git-frontend-mlp276s-projects.vercel.app';
     // ─────────────────────────────────────────────────────────────────────────
 
     const CAMPUS_NAMES = {
