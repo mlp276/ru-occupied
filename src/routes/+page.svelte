@@ -121,8 +121,8 @@
             const sensors = await res.json();
 
             const built = {};
-            sensors.forEach(({ campus, building, room_name }) => {
-                if (!campus || !building || !room_name) return;
+            sensors.forEach(({ campus, building, room }) => {
+                if (!campus || !building || !room) return;
 
                 // Ensure the campus entry exists
                 if (!built[campus]) {
@@ -145,8 +145,7 @@
 
                 // Add the room to its building if not already present
                 const rooms = built[campus].buildings[building].rooms;
-                if (!rooms.includes(room_name)) rooms.push(room_name);
-            });
+                if (!rooms.includes(room)) rooms.push(room);
             });
 
             campusData = built;
