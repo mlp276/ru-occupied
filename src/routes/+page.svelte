@@ -3,7 +3,7 @@
 
     // ─── API Configuration ────────────────────────────────────────────────────
     // Change this one constant to point to a different backend deployment.
-    const BASE_URL = 'https://ru-occupied-git-frontend-mlp276s-projects.vercel.app';
+    const BASE_URL = 'https://ru-occupied.vercel.app';
     // ─────────────────────────────────────────────────────────────────────────
 
     const CAMPUS_NAMES = {
@@ -14,7 +14,7 @@
     };
 
     const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-    const DAYS  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const DAYS  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     // ─── Page state ──────────────────────────────────────────────────────────
     // 'home' | 'buildings' | 'rooms' | 'calendar'
@@ -32,6 +32,38 @@
 
     let calendarView = 'daily';   // 'daily' | 'weekly'
     let occupancy    = {};        // mock occupancy grid for selected room
+
+    // ─── Search ──────────────────────────────────────────────────────────────
+    let searchQuery   = '';
+    let searchFocused = false;
+
+    $: searchResults = (() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return [];
+        const results = [];
+        for (const [campusId, campus] of Object.entries(campusData)) {
+            for (const [buildingId, building] of Object.entries(campus.buildings)) {
+                for (const room of building.rooms) {
+                    if (`${building.name} ${room}`.toLowerCase().includes(q)) {
+                        results.push({ campusId, buildingId, room,
+                            campusName: campus.name, buildingName: building.name });
+                    }
+                }
+            }
+        }
+        return results;
+    })();
+
+    function navigateToRoom(campusId, buildingId, room) {
+        currentCampus   = campusId;
+        currentBuilding = buildingId;
+        currentRoom     = room;
+        occupancy       = generateMockOccupancy();
+        navigationStack = ['home', 'buildings', 'rooms'];
+        page = 'calendar';
+        searchQuery   = '';
+        searchFocused = false;
+    }
 
     // ─── Status toast ────────────────────────────────────────────────────────
     let statusMessage = '';
@@ -59,6 +91,11 @@
         }
         // Force reactivity on the stack
         navigationStack = navigationStack;
+    }
+
+    function goHome() {
+        navigationStack = [];
+        page = 'home';
     }
 
     function goToCampus(campusId) {
@@ -111,7 +148,7 @@
     }
 
     $: currentHour = new Date().getHours();
-    $: currentDay  = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]; // Mon=0 index
+    $: currentDay  = DAYS[new Date().getDay()]; // getDay(): 0=Sun, 1=Mon, … 6=Sat
 
     // ─── API fetch on mount ──────────────────────────────────────────────────
     onMount(async () => {
@@ -167,8 +204,43 @@
         <div class="container">
             <header>
                 <h1>RU Occupied</h1>
-                <p class="subtitle">Check classroom availability across Rutgers campuses</p>
+                <p class="subtitle">Check room availability across Rutgers campuses</p>
             </header>
+
+            {#if !loading && !loadError && Object.keys(campusData).length > 0}
+                <div class="search-wrapper">
+                    <input
+                        class="search-input"
+                        type="search"
+                        placeholder="Search by room or building…"
+                        bind:value={searchQuery}
+                        on:focus={() => searchFocused = true}
+                        on:blur={() => setTimeout(() => { searchFocused = false; }, 150)}
+                        aria-label="Search rooms"
+                        aria-expanded={searchFocused && searchResults.length > 0}
+                        aria-haspopup="listbox"
+                    />
+                    {#if searchFocused && searchQuery.trim()}
+                        <ul class="search-results" role="listbox">
+                            {#if searchResults.length === 0}
+                                <li class="search-no-results">No rooms found</li>
+                            {:else}
+                                {#each searchResults as result}
+                                    <li
+                                        class="search-result-item"
+                                        role="option"
+                                        aria-selected="false"
+                                        on:mousedown={() => navigateToRoom(result.campusId, result.buildingId, result.room)}
+                                    >
+                                        <span class="result-room">{result.room}</span>
+                                        <span class="result-meta">{result.buildingName} · {result.campusName}</span>
+                                    </li>
+                                {/each}
+                            {/if}
+                        </ul>
+                    {/if}
+                </div>
+            {/if}
 
             {#if loading}
                 <div class="center"><div class="loading-indicator"></div></div>
@@ -203,7 +275,10 @@
     <!-- ── Buildings page ────────────────────────────────────────────────── -->
     {:else if page === 'buildings' && selectedCampus}
         <div class="container">
-            <button class="back-btn" on:click={navigateBack}>← Back</button>
+            <div class="nav-buttons">
+                <button class="back-btn" on:click={navigateBack}>← Back</button>
+                <button class="home-btn" on:click={goHome}>⌂ Home</button>
+            </div>
             <header><h1>{selectedCampus.name}</h1></header>
             <div class="cards">
                 {#each Object.entries(selectedCampus.buildings) as [buildingId, building]}
@@ -226,7 +301,10 @@
     <!-- ── Rooms page ────────────────────────────────────────────────────── -->
     {:else if page === 'rooms' && selectedBuilding}
         <div class="container">
-            <button class="back-btn" on:click={navigateBack}>← Back</button>
+            <div class="nav-buttons">
+                <button class="back-btn" on:click={navigateBack}>← Back</button>
+                <button class="home-btn" on:click={goHome}>⌂ Home</button>
+            </div>
             <header><h1>{selectedBuilding.name}</h1></header>
             <div class="cards">
                 {#each selectedBuilding.rooms as room}
@@ -251,7 +329,10 @@
     <!-- ── Calendar page ─────────────────────────────────────────────────── -->
     {:else if page === 'calendar' && currentRoom}
         <div class="container">
-            <button class="back-btn" on:click={navigateBack}>← Back</button>
+            <div class="nav-buttons">
+                <button class="back-btn" on:click={navigateBack}>← Back</button>
+                <button class="home-btn" on:click={goHome}>⌂ Home</button>
+            </div>
             <header><h1>{roomTitle}</h1></header>
 
             <div class="calendar-controls">
@@ -273,10 +354,6 @@
                         <div class="legend-box" style="background:#1565c0;"></div>
                         <span>100% likely</span>
                     </div>
-                    <div class="legend-item">
-                        <div class="legend-box" style="background:#2c2c2c;"></div>
-                        <span>Past: Occupied</span>
-                    </div>
                 </div>
             </div>
 
@@ -287,17 +364,10 @@
                         <div class="cal-header">Today</div>
                         {#each HOURS as hour}
                             <div class="time-label">{formatHour(hour)}</div>
-                            {#if hour < currentHour}
-                                {@const prob = occupancy[currentDay]?.[hour] ?? 0}
-                                <div class="hour-cell {prob > 0.5 ? 'past-occupied' : 'past-empty'}">
-                                    {prob > 0.5 ? 'Occupied' : 'Empty'}
-                                </div>
-                            {:else}
-                                {@const prob = occupancy[currentDay]?.[hour] ?? 0}
-                                <div class="hour-cell {probClass(prob)}">
-                                    {Math.round(prob * 100)}%
-                                </div>
-                            {/if}
+                            {@const prob = occupancy[currentDay]?.[hour] ?? 0}
+                            <div class="hour-cell {probClass(prob)}">
+                                {Math.round(prob * 100)}%
+                            </div>
                         {/each}
                     </div>
 
@@ -308,17 +378,10 @@
                         {#each HOURS as hour}
                             <div class="time-label">{formatHour(hour)}</div>
                             {#each DAYS as day}
-                                {@const prob   = occupancy[day]?.[hour] ?? 0}
-                                {@const isPast = day === currentDay && hour < currentHour}
-                                {#if isPast}
-                                    <div class="hour-cell {prob > 0.5 ? 'past-occupied' : 'past-empty'}">
-                                        {prob > 0.5 ? '✓' : '✗'}
-                                    </div>
-                                {:else}
-                                    <div class="hour-cell {probClass(prob)}">
-                                        {Math.round(prob * 100)}%
-                                    </div>
-                                {/if}
+                                {@const prob = occupancy[day]?.[hour] ?? 0}
+                                <div class="hour-cell {probClass(prob)}">
+                                    {Math.round(prob * 100)}%
+                                </div>
                             {/each}
                         {/each}
                     </div>
@@ -406,8 +469,79 @@
         padding: 2rem;
     }
 
-    /* ── Back button ─────────────────────────────────────────────────────── */
-    .back-btn {
+    /* ── Search ──────────────────────────────────────────────────────────── */
+    .search-wrapper {
+        position: relative;
+        max-width: 480px;
+        margin: 0 auto 2rem;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 2px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        font-size: 1rem;
+        transition: border-color 0.2s;
+        outline: none;
+    }
+    .search-input:focus { border-color: var(--rutgers-red); }
+
+    .search-results {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        box-shadow: var(--shadow-lg);
+        list-style: none;
+        max-height: 280px;
+        overflow-y: auto;
+        z-index: 100;
+    }
+
+    .search-result-item {
+        display: flex;
+        flex-direction: column;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--color-border);
+        transition: background 0.15s;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: rgba(204, 0, 51, 0.07); }
+
+    .result-room {
+        font-weight: 600;
+        color: var(--rutgers-red);
+        font-size: 0.95rem;
+    }
+    .result-meta {
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+        margin-top: 0.15rem;
+    }
+
+    .search-no-results {
+        padding: 0.75rem 1rem;
+        color: var(--color-text-secondary);
+        font-size: 0.9rem;
+        text-align: center;
+    }
+
+    /* ── Nav buttons row ─────────────────────────────────────────────────── */
+    .nav-buttons {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ── Back / Home buttons ─────────────────────────────────────────────── */
+    .back-btn, .home-btn {
         background: var(--rutgers-red);
         color: white;
         border: none;
@@ -425,11 +559,12 @@
         min-width: 120px;
         touch-action: manipulation;
     }
-    .back-btn:hover  { background: var(--rutgers-red-dark); }
-    .back-btn:focus-visible {
+    .back-btn:hover, .home-btn:hover  { background: var(--rutgers-red-dark); }
+    .back-btn:focus-visible, .home-btn:focus-visible {
         outline: 3px solid rgba(204, 0, 51, 0.5);
         outline-offset: 3px;
     }
+
 
     /* ── Cards ───────────────────────────────────────────────────────────── */
     .cards {
@@ -577,16 +712,22 @@
         cursor: pointer;
         touch-action: manipulation;
     }
-    .hour-cell:hover       { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+    .hour-cell:hover       { box-shadow: 0 2px 8px rgba(0,0,0,.15); }
     .hour-cell:focus-visible { outline: 2px solid var(--rutgers-red); outline-offset: 2px; }
 
-    .past-empty    { background: white;   color: #999; }
-    .past-occupied { background: #2c2c2c; color: white; }
     .prob-0        { background: #ffffff; color: #666; }
     .prob-25       { background: #e3f2fd; color: #1976d2; }
     .prob-50       { background: #90caf9; color: #0d47a1; }
     .prob-75       { background: #42a5f5; color: white; }
     .prob-100      { background: #1565c0; color: white; }
+
+    @media (prefers-color-scheme: dark) {
+        .prob-0   { background: #2a2a2a; color: #666; }
+        .prob-25  { background: #162336; color: #64b5f6; }
+        .prob-50  { background: #173658; color: #90caf9; }
+        .prob-75  { background: #1a5a9e; color: #ddeeff; }
+        .prob-100 { background: #1565c0; color: #ffffff; }
+    }
 
     /* ── Loading spinner ─────────────────────────────────────────────────── */
     .loading-indicator {
@@ -629,11 +770,13 @@
         h1 { font-size: 1.75rem; }
         .cards { grid-template-columns: 1fr; gap: 1rem; }
         .card  { min-height: 100px; }
-        .back-btn {
+        .nav-buttons {
             position: sticky;
             top: 1rem;
             z-index: 10;
-            width: 100%;
+        }
+        .back-btn, .home-btn {
+            flex: 1;
             justify-content: center;
         }
         .calendar-grid       { grid-template-columns: 60px repeat(7, 1fr); }
@@ -645,6 +788,6 @@
     @media (max-width: 480px) {
         .legend     { font-size: 0.8rem; }
         .legend-box { width: 18px; height: 18px; }
-        .back-btn   { font-size: 1rem; padding: 0.875rem 1.5rem; }
+        .back-btn, .home-btn { font-size: 1rem; padding: 0.875rem 1.5rem; }
     }
 </style>
