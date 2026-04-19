@@ -13,7 +13,7 @@
         'cook-doug':   'Cook/Douglass Campus'
     };
 
-    const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+    const HOURS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
     const DAYS  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     // ─── Page state ──────────────────────────────────────────────────────────
@@ -43,9 +43,9 @@
         const results = [];
         for (const [campusId, campus] of Object.entries(campusData)) {
             for (const [buildingId, building] of Object.entries(campus.buildings)) {
-                for (const room of building.rooms) {
-                    if (`${building.name} ${room}`.toLowerCase().includes(q)) {
-                        results.push({ campusId, buildingId, room,
+                for (const [roomId, room] of Object.entries(building.rooms)) {
+                    if (`${building.name} ${room.name}`.toLowerCase().includes(q)) {
+                        results.push({ campusId, buildingId, roomId,
                             campusName: campus.name, buildingName: building.name });
                     }
                 }
@@ -110,9 +110,9 @@
         page = 'rooms';
     }
 
-    function goToRoom(room) {
-        currentRoom = room;
-        occupancy = generateMockOccupancy();
+    function goToRoom(roomId) {
+        currentRoom = roomId;
+        // occupancy = generateMockOccupancy();
         navigationStack = [...navigationStack, page];
         page = 'calendar';
     }
@@ -130,6 +130,17 @@
     }
 
     // ─── Calendar helpers ────────────────────────────────────────────────────
+    
+    // Formats 7x24 occupancy list into a map
+    function formatOccupancy(occList) {
+        const occ = {};
+        let i = 0;
+        DAYS.forEach(day => {
+            occ[day] = {};
+            HOURS.forEach(hour => { occ[day][hour] = occList[i]; i++; });
+        });
+        return occ;
+    }
     function generateMockOccupancy() {
         const occ = {};
         DAYS.forEach(day => {
@@ -144,7 +155,7 @@
     }
 
     function formatHour(h) {
-        return h <= 12 ? `${h}AM` : `${h - 12}PM`;
+        return h == 0 ? `12AM` : h <= 12 ? `${h}AM` : `${h - 12}PM`;
     }
 
     $: currentHour = new Date().getHours();
@@ -156,10 +167,12 @@
             const res = await fetch(`${BASE_URL}/api/sensors`);
             if (!res.ok) throw new Error(`Server returned ${res.status}`);
             const sensors = await res.json();
+            console.log("Hello");
+            console.log(sensors);
 
             const built = {};
-            sensors.forEach(({ campus, building, room }) => {
-                if (!campus || !building || !room) return;
+            sensors.forEach(({ campus, building, room, currently_occupied, occupancy_predictions }) => {
+                if (!campus || !building || !room || !currently_occupied) return;
 
                 // Ensure the campus entry exists
                 if (!built[campus]) {
@@ -176,13 +189,20 @@
                 if (!built[campus].buildings[building]) {
                     built[campus].buildings[building] = {
                         name: building,
-                        rooms: []
+                        rooms: {}
                     };
                 }
 
                 // Add the room to its building if not already present
-                const rooms = built[campus].buildings[building].rooms;
-                if (!rooms.includes(room)) rooms.push(room);
+                // const rooms = built[campus].buildings[building].rooms;
+                // if (!rooms.includes(room)) rooms.push(room);
+                if (!built[campus].buildings[building].rooms[room]) {
+                    built[campus].buildings[building].rooms[room] = {
+                        name: room,
+                        currentlyOccupied: currently_occupied,
+                        occupancyPredictions: !occupancy_predictions ? generateMockOccupancy() : formatOccupancy(occupancy_predictions)
+                    };
+                }
             });
 
             campusData = built;
@@ -254,7 +274,7 @@
             {:else}
                 <div class="cards">
                     {#each Object.entries(campusData) as [campusId, campus]}
-                        {@const totalRooms = Object.values(campus.buildings).reduce((s, b) => s + b.rooms.length, 0)}
+                        {@const totalRooms = Object.values(campus.buildings).reduce((s, b) => s + Object.keys(b.rooms).length, 0)}
                         <div
                             class="card"
                             role="button"
@@ -286,13 +306,13 @@
                         class="card"
                         role="button"
                         tabindex="0"
-                        aria-label="View {building.name}, {building.rooms.length} rooms"
+                        aria-label="View {building.name}, {Object.keys(building.rooms).length} rooms"
                         on:click={() => goToBuilding(buildingId)}
                         on:keypress={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToBuilding(buildingId); }}}
                     >
                         <div class="card-icon">🏢</div>
                         <h2>{building.name}</h2>
-                        <p>{building.rooms.length} room{building.rooms.length !== 1 ? 's' : ''}</p>
+                        <p>{Object.keys(building.rooms).length} room{Object.keys(building.room).length !== 1 ? 's' : ''}</p>
                     </div>
                 {/each}
             </div>
@@ -307,19 +327,19 @@
             </div>
             <header><h1>{selectedBuilding.name}</h1></header>
             <div class="cards">
-                {#each selectedBuilding.rooms as room}
+                {#each Object.entries(selectedBuilding.rooms) as [roomId, room]}
                     {@const prob   = Math.random()}
                     {@const status = roomStatus(prob)}
                     <div
                         class="card"
                         role="button"
                         tabindex="0"
-                        aria-label="View occupancy for Room {room}, status: {status.label}"
-                        on:click={() => goToRoom(room)}
-                        on:keypress={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToRoom(room); }}}
+                        aria-label="View occupancy for Room {room.name}, status: {status.label}"
+                        on:click={() => goToRoom(roomId)}
+                        on:keypress={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToRoom(roomId); }}}
                     >
                         <div class="card-icon">🚪</div>
-                        <h2>{room}</h2>
+                        <h2>{room.name}</h2>
                         <p class="room-status {status.cls}">{status.label}</p>
                     </div>
                 {/each}
