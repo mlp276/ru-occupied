@@ -219,6 +219,7 @@
 <div class="app">
 
     <!-- ── Home page ─────────────────────────────────────────────────────── -->
+    <title>RU Occupied</title>
     {#if page === 'home'}
         <div class="container">
             <header>
