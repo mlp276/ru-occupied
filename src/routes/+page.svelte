@@ -124,10 +124,12 @@
     $: roomTitle        = selectedBuilding ? `${selectedBuilding.name} — Room ${currentRoom}`      : '';
 
     // ─── Room status badge helpers ────────────────────────────────────────────
-    function roomStatus(prob) {
-        if (prob < 0.3) return { label: 'Likely Free',     cls: 'status-free'    };
-        if (prob < 0.7) return { label: 'Maybe Busy',      cls: 'status-mixed'   };
-        return              { label: 'Likely Occupied',  cls: 'status-busy'    };
+    function roomStatus(occupied) {
+        // if (prob < 0.3) return { label: 'Likely Free',     cls: 'status-free'    };
+        // if (prob < 0.7) return { label: 'Maybe Busy',      cls: 'status-mixed'   };
+        // return              { label: 'Likely Occupied',  cls: 'status-busy'    };
+        if (occupied) return { label: 'Occupied Now', cls: 'status-busy'  };
+        return              { label: 'Free Now',     cls: 'status-free'  };
     }
 
     // ─── Calendar helpers ────────────────────────────────────────────────────
@@ -328,8 +330,8 @@
             <header><h1>{selectedBuilding.name}</h1></header>
             <div class="cards">
                 {#each Object.entries(selectedBuilding.rooms) as [roomId, room]}
-                    {@const prob   = Math.random()}
-                    {@const status = roomStatus(prob)}
+                    {@const occupied = room.currentlyOccupied}
+                    {@const status = roomStatus(occupied)}
                     <div
                         class="card"
                         role="button"
@@ -354,6 +356,14 @@
                 <button class="home-btn" on:click={goHome}>⌂ Home</button>
             </div>
             <header><h1>{roomTitle}</h1></header>
+
+            <div class="occupancy-banner {campusData[currentCampus].buildings[currentBuilding].rooms[currentRoom].currentlyOccupied ? 'banner-busy' : 'banner-free'}">
+            <span class="banner-dot"></span>
+            <span class="banner-text">
+                {campusData[currentCampus].buildings[currentBuilding].rooms[currentRoom].currentlyOccupied ? 'Currently occupied' : 'Currently free'}
+            </span>
+            <span class="banner-sub">Live sensor data</span>
+        </div>
 
             <div class="calendar-controls">
                 <select class="view-toggle" bind:value={calendarView}>
@@ -385,9 +395,14 @@
                         {#each HOURS as hour}
                             <div class="time-label">{formatHour(hour)}</div>
                             {@const prob = occupancy[currentDay]?.[hour] ?? 0}
-                            <div class="hour-cell {probClass(prob)}">
+                            {@const currentRoomData = campusData[currentCampus].buildings[currentBuilding].rooms[currentRoom]}
+                            <div class="hour-cell {probClass(prob)} {hour === currentHour ? 'is-now ' + (currentRoomData.currentlyOccupied ? 'is-now-busy' : 'is-now-free') : ''}">
+                            {#if hour === currentHour}
+                                {currentRoomData.currentlyOccupied ? 'Occupied' : 'Free'}
+                            {:else}
                                 {Math.round(prob * 100)}%
-                            </div>
+                            {/if}
+                        </div>
                         {/each}
                     </div>
 
@@ -399,8 +414,13 @@
                             <div class="time-label">{formatHour(hour)}</div>
                             {#each DAYS as day}
                                 {@const prob = occupancy[day]?.[hour] ?? 0}
-                                <div class="hour-cell {probClass(prob)}">
-                                    {Math.round(prob * 100)}%
+                                {@const currentRoomData = campusData[currentCampus].buildings[currentBuilding].rooms[currentRoom]}
+                                <div class="hour-cell {probClass(prob)} {hour === currentHour && day === currentDay ? 'is-now ' + (currentRoomData.currentlyOccupied ? 'is-now-busy' : 'is-now-free') : ''}">
+                                    {#if hour === currentHour && day === currentDay}
+                                        {currentRoomData.currentlyOccupied ? 'Occupied' : 'Free'}
+                                    {:else}
+                                        {Math.round(prob * 100)}%
+                                    {/if}
                                 </div>
                             {/each}
                         {/each}
@@ -810,4 +830,61 @@
         .legend-box { width: 18px; height: 18px; }
         .back-btn, .home-btn { font-size: 1rem; padding: 0.875rem 1.5rem; }
     }
+
+    /* ── Occupancy banner ────────────────────────────────────────────────── */
+    .occupancy-banner {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1.25rem;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+        border: 1px solid;
+        font-size: 0.95rem;
+    }
+    .banner-free  { background: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; }
+    .banner-busy  { background: #ffebee; border-color: #ef9a9a; color: #b71c1c; }
+
+    .banner-dot {
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        animation: pulse 1.8s ease-in-out infinite;
+    }
+    .banner-free .banner-dot  { background: #2e7d32; }
+    .banner-busy .banner-dot  { background: #c62828; }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1);    }
+        50%       { opacity: 0.6; transform: scale(1.25); }
+    }
+
+    .banner-text { font-weight: 600; }
+    .banner-sub  { margin-left: auto; font-size: 0.8rem; opacity: 0.7; }
+
+    @media (prefers-color-scheme: dark) {
+        .banner-free { background: #1a3320; border-color: #2e7d32; color: #a5d6a7; }
+        .banner-busy { background: #3b1a1a; border-color: #c62828; color: #ef9a9a; }
+    }
+
+    /* ── Current-hour highlight ──────────────────────────────────────────── */
+    .hour-cell.is-now {
+        outline: 3px solid var(--rutgers-red);
+        outline-offset: -2px;
+        font-weight: 700;
+    }
+    .hour-cell.is-now-free {
+        background: #e8f5e9 !important;
+        color: #1b5e20 !important;
+    }
+    .hour-cell.is-now-busy {
+        background: #ffebee !important;
+        color: #b71c1c !important;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .hour-cell.is-now-free { background: #1a3320 !important; color: #a5d6a7 !important; }
+        .hour-cell.is-now-busy { background: #3b1a1a !important; color: #ef9a9a !important; }
+    }
+
 </style>
