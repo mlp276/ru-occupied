@@ -172,7 +172,7 @@
 
             const built = {};
             sensors.forEach(({ campus, building, room, currently_occupied, occupancy_predictions }) => {
-                if (!campus || !building || !room || !currently_occupied) return;
+                if (!campus || !building || !room || currently_occupied == null) return;
 
                 // Ensure the campus entry exists
                 if (!built[campus]) {
