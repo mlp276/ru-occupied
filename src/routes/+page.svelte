@@ -662,10 +662,10 @@
         align-items: center;
         justify-content: center;
     }
-    .status-free   { background: #e8f5e9; color: #1b5e20; }
-    .status-mixed  { background: #fff9c4; color: #f57f17; }
-    .status-busy   { background: #ffebee; color: #b71c1c; }
-    .status-neutral{ background: #eceff1; color: #455a64; }
+    .status-free   { background: #e8f5e9; color: #1b5e20 !important; }
+    .status-mixed  { background: #fff9c4; color: #f57f17 !important; }
+    .status-busy   { background: #ffebee; color: #b71c1c !important; }
+    .status-neutral{ background: #eceff1; color: #455a64 !important; }
 
     /* ── Calendar ────────────────────────────────────────────────────────── */
     .calendar-controls {
