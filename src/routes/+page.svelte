@@ -46,7 +46,7 @@
                 for (const [roomId, room] of Object.entries(building.rooms)) {
                     if (`${building.name} ${room.name}`.toLowerCase().includes(q)) {
                         results.push({ campusId, buildingId, roomId,
-                            campusName: campus.name, buildingName: building.name });
+                            campusName: campus.name, buildingName: building.name, roomName: room.name });
                     }
                 }
             }
@@ -54,11 +54,11 @@
         return results;
     })();
 
-    function navigateToRoom(campusId, buildingId, room) {
+    function navigateToRoom(campusId, buildingId, roomId) {
         currentCampus   = campusId;
         currentBuilding = buildingId;
-        currentRoom     = room;
-        occupancy       = generateMockOccupancy();
+        currentRoom     = roomId;
+        occupancy       = campusData[currentCampus].buildings[currentBuilding].rooms[currentRoom].occupancyPredictions;
         navigationStack = ['home', 'buildings', 'rooms'];
         page = 'calendar';
         searchQuery   = '';
@@ -113,6 +113,7 @@
     function goToRoom(roomId) {
         currentRoom = roomId;
         // occupancy = generateMockOccupancy();
+        occupancy = campusData[currentCampus].buildings[currentBuilding].rooms[currentRoom].occupancyPredictions;
         navigationStack = [...navigationStack, page];
         page = 'calendar';
     }
@@ -155,7 +156,8 @@
     }
 
     function formatHour(h) {
-        return h == 0 ? `12AM` : h <= 12 ? `${h}AM` : `${h - 12}PM`;
+        // return h == 0 ? `12AM` : h <= 12 ? `${h}AM` : `${h - 12}PM`;
+        return h < 12 ? `${h % 12 || 12}AM` : `${h % 12 || 12}PM`;
     }
 
     $: currentHour = new Date().getHours();
@@ -167,8 +169,6 @@
             const res = await fetch(`${BASE_URL}/api/sensors`);
             if (!res.ok) throw new Error(`Server returned ${res.status}`);
             const sensors = await res.json();
-            console.log("Hello");
-            console.log(sensors);
 
             const built = {};
             sensors.forEach(({ campus, building, room, currently_occupied, occupancy_predictions }) => {
@@ -250,9 +250,9 @@
                                         class="search-result-item"
                                         role="option"
                                         aria-selected="false"
-                                        on:mousedown={() => navigateToRoom(result.campusId, result.buildingId, result.room)}
+                                        on:mousedown={() => navigateToRoom(result.campusId, result.buildingId, result.roomId) }
                                     >
-                                        <span class="result-room">{result.room}</span>
+                                        <span class="result-room">{result.roomName}</span>
                                         <span class="result-meta">{result.buildingName} · {result.campusName}</span>
                                     </li>
                                 {/each}
@@ -312,7 +312,7 @@
                     >
                         <div class="card-icon">🏢</div>
                         <h2>{building.name}</h2>
-                        <p>{Object.keys(building.rooms).length} room{Object.keys(building.room).length !== 1 ? 's' : ''}</p>
+                        <p>{Object.keys(building.rooms).length} room{Object.keys(building.rooms).length !== 1 ? 's' : ''}</p>
                     </div>
                 {/each}
             </div>
