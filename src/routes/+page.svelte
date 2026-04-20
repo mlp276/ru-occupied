@@ -718,13 +718,12 @@
     .calendar-grid.daily { grid-template-columns: 80px 1fr; }
 
     .cal-header {
-        background: rgba(204, 0, 51, 0.1);
         padding: 0.75rem 0.5rem;
         text-align: center;
         font-weight: 600;
         border-radius: 6px;
         font-size: 0.9rem;
-        color: var(--rutgers-red);
+        color: var(--color-text-secondary);
     }
 
     .time-label {
