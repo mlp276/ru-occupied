@@ -13,7 +13,7 @@
         'cook-doug':   'Cook/Douglass Campus'
     };
 
-    const HOURS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+    const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     const DAYS  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     // ─── Page state ──────────────────────────────────────────────────────────
@@ -125,9 +125,6 @@
 
     // ─── Room status badge helpers ────────────────────────────────────────────
     function roomStatus(occupied) {
-        // if (prob < 0.3) return { label: 'Likely Free',     cls: 'status-free'    };
-        // if (prob < 0.7) return { label: 'Maybe Busy',      cls: 'status-mixed'   };
-        // return              { label: 'Likely Occupied',  cls: 'status-busy'    };
         if (occupied) return { label: 'Occupied Now', cls: 'status-busy'  };
         return              { label: 'Free Now',     cls: 'status-free'  };
     }
